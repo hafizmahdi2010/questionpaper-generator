@@ -3,8 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { FormData } from '@/pages/Index';
 import { generateQuestionPaper, generateSolutions } from '@/services/geminiService';
 import { FileText, BookOpen, PenTool, Download } from 'lucide-react';
@@ -122,9 +120,7 @@ const QuestionPaper: React.FC<QuestionPaperProps> = ({
             </div>
           ) : generatedQuestions ? (
             <div className="prose prose-sm sm:prose lg:prose-lg max-w-none dark:prose-invert">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {generatedQuestions}
-              </ReactMarkdown>
+              <div className="whitespace-pre-wrap">{generatedQuestions}</div>
             </div>
           ) : (
             <div className="text-center py-8">

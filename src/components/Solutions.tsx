@@ -2,8 +2,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { ArrowLeft, Download } from 'lucide-react';
 
 interface SolutionsProps {
@@ -39,9 +37,7 @@ const Solutions: React.FC<SolutionsProps> = ({ solutions, onBack }) => {
         
         <CardContent>
           <div className="prose prose-sm sm:prose lg:prose-lg max-w-none dark:prose-invert">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {solutions}
-            </ReactMarkdown>
+            <div className="whitespace-pre-wrap">{solutions}</div>
           </div>
         </CardContent>
       </Card>

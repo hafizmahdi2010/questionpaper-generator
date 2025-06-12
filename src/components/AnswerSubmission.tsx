@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { FormData, Answer, PerformanceResult } from '@/pages/Index';
 import { evaluateAnswers } from '@/services/geminiService';
 import { CheckCircle, Clock, Send } from 'lucide-react';
@@ -125,9 +123,10 @@ const AnswerSubmission: React.FC<AnswerSubmissionProps> = ({
               <CardContent className="pt-4">
                 <div className="space-y-4">
                   <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {`**Question ${index + 1}:**\n${question.trim()}`}
-                    </ReactMarkdown>
+                    <div className="whitespace-pre-wrap">
+                      <strong>Question {index + 1}:</strong>
+                      {question.trim()}
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
