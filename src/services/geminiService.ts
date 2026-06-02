@@ -20,30 +20,42 @@ const makeRequest = async (prompt: string, model: string): Promise<string> => {
   const chosenModel = model || FREE_MODELS[1];
   console.log('OpenRouter request using model:', chosenModel);
 
-  const response = await fetch(OPENROUTER_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : '',
-      'X-Title': 'Question Paper Generator',
-    },
-    body: JSON.stringify({
-      model: chosenModel,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
-    }),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    console.error('OpenRouter error:', response.status, errText);
-    throw new Error(`OpenRouter error ${response.status}: ${errText}`);
+  let response: Response;
+  try {
+    response = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'X-Title': 'Question Paper Generator',
+      },
+      body: JSON.stringify({
+        model: chosenModel,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 4096,
+      }),
+    });
+  } catch (e: any) {
+    throw new Error(`Network error: ${e?.message || e}`);
   }
 
-  const data = await response.json();
+  const raw = await response.text();
+  if (!response.ok) {
+    console.error('OpenRouter error:', response.status, raw);
+    throw new Error(`OpenRouter ${response.status}: ${raw.slice(0, 300)}`);
+  }
+
+  let data: any;
+  try { data = JSON.parse(raw); } catch {
+    throw new Error(`Invalid JSON response: ${raw.slice(0, 300)}`);
+  }
+
   const content = data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error('Empty response from OpenRouter');
+  if (!content) {
+    console.error('Empty content. Full response:', data);
+    throw new Error(`Model "${chosenModel}" returned no content. Try a different model. (${data?.error?.message || 'empty response'})`);
+  }
   return content;
 };
 
