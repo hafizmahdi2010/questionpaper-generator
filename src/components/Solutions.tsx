@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download } from 'lucide-react';
+import MarkdownPreview from '@uiw/react-markdown-preview';
 
 interface SolutionsProps {
   solutions: string;
