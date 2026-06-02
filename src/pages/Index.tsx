@@ -19,6 +19,9 @@ export interface FormData {
   specificTopics: string;
   additionalInstructions: string;
   questionPaperPattern: string;
+  model: string;
+  syllabusPdfText?: string;
+  syllabusFileName?: string;
 }
 
 export interface Question {
