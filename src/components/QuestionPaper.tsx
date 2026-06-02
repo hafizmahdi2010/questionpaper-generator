@@ -7,6 +7,7 @@ import { FormData } from '@/pages/Index';
 import { generateQuestionPaper, generateSolutions } from '@/services/geminiService';
 import { FileText, BookOpen, PenTool, Download } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import MarkdownPreview from '@uiw/react-markdown-preview';
 
 interface QuestionPaperProps {
   formData: FormData;
@@ -119,8 +120,11 @@ const QuestionPaper: React.FC<QuestionPaperProps> = ({
               <Skeleton className="h-32 w-full" />
             </div>
           ) : generatedQuestions ? (
-            <div className="prose prose-sm sm:prose lg:prose-lg max-w-none dark:prose-invert">
-              <div className="whitespace-pre-wrap">{generatedQuestions}</div>
+            <div data-color-mode="light">
+              <MarkdownPreview
+                source={generatedQuestions}
+                style={{ background: 'transparent', color: 'inherit' }}
+              />
             </div>
           ) : (
             <div className="text-center py-8">

@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download } from 'lucide-react';
+import MarkdownPreview from '@uiw/react-markdown-preview';
 
 interface SolutionsProps {
   solutions: string;
@@ -36,8 +37,11 @@ const Solutions: React.FC<SolutionsProps> = ({ solutions, onBack }) => {
         </CardHeader>
         
         <CardContent>
-          <div className="prose prose-sm sm:prose lg:prose-lg max-w-none dark:prose-invert">
-            <div className="whitespace-pre-wrap">{solutions}</div>
+          <div data-color-mode="light">
+            <MarkdownPreview
+              source={solutions}
+              style={{ background: 'transparent', color: 'inherit' }}
+            />
           </div>
         </CardContent>
       </Card>

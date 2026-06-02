@@ -9,6 +9,8 @@ import { FormData, Answer, PerformanceResult } from '@/pages/Index';
 import { evaluateAnswers } from '@/services/geminiService';
 import { CheckCircle, Clock, Send } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import MarkdownPreview from '@uiw/react-markdown-preview';
+import { extractQuestions } from '@/lib/extractQuestions';
 
 interface AnswerSubmissionProps {
   formData: FormData;
@@ -87,12 +89,6 @@ const AnswerSubmission: React.FC<AnswerSubmissionProps> = ({
     }
   };
 
-  // Extract questions from markdown text (simple parsing)
-  const extractQuestions = (text: string) => {
-    const questionPattern = /(?:Question\s*\d+|Q\.\s*\d+|\d+\.)/gi;
-    const sections = text.split(questionPattern).filter(section => section.trim());
-    return sections.slice(1); // Skip the first empty section
-  };
 
   const questionSections = extractQuestions(questions);
 
@@ -116,19 +112,26 @@ const AnswerSubmission: React.FC<AnswerSubmissionProps> = ({
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
+          {questionSections.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center">
+              Could not detect questions from the generated paper. You can still type answers below for each question shown in the previous step.
+            </p>
+          )}
           {questionSections.map((question, index) => (
             <Card key={index} className="border-l-4 border-l-blue-500">
               <CardContent className="pt-4">
                 <div className="space-y-4">
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <div className="whitespace-pre-wrap">
-                      <strong>Question {index + 1}:</strong>
-                      {question.trim()}
-                    </div>
+                  <div>
+                    <div className="font-semibold mb-2">Question {index + 1}</div>
+                    <MarkdownPreview
+                      source={question}
+                      style={{ background: 'transparent', color: 'inherit' }}
+                      wrapperElement={{ 'data-color-mode': 'light' } as any}
+                    />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor={`answer-${index}`}>Your Answer:</Label>
                     <Textarea
