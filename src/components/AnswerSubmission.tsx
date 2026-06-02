@@ -9,6 +9,8 @@ import { FormData, Answer, PerformanceResult } from '@/pages/Index';
 import { evaluateAnswers } from '@/services/geminiService';
 import { CheckCircle, Clock, Send } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import MarkdownPreview from '@uiw/react-markdown-preview';
+import { extractQuestions } from '@/lib/extractQuestions';
 
 interface AnswerSubmissionProps {
   formData: FormData;
