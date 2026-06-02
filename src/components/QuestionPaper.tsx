@@ -7,6 +7,7 @@ import { FormData } from '@/pages/Index';
 import { generateQuestionPaper, generateSolutions } from '@/services/geminiService';
 import { FileText, BookOpen, PenTool, Download } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import MarkdownPreview from '@uiw/react-markdown-preview';
 
 interface QuestionPaperProps {
   formData: FormData;
