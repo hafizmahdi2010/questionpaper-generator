@@ -118,19 +118,26 @@ const AnswerSubmission: React.FC<AnswerSubmissionProps> = ({
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
+          {questionSections.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center">
+              Could not detect questions from the generated paper. You can still type answers below for each question shown in the previous step.
+            </p>
+          )}
           {questionSections.map((question, index) => (
             <Card key={index} className="border-l-4 border-l-blue-500">
               <CardContent className="pt-4">
                 <div className="space-y-4">
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <div className="whitespace-pre-wrap">
-                      <strong>Question {index + 1}:</strong>
-                      {question.trim()}
-                    </div>
+                  <div>
+                    <div className="font-semibold mb-2">Question {index + 1}</div>
+                    <MarkdownPreview
+                      source={question}
+                      style={{ background: 'transparent', color: 'inherit' }}
+                      wrapperElement={{ 'data-color-mode': 'light' } as any}
+                    />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor={`answer-${index}`}>Your Answer:</Label>
                     <Textarea
