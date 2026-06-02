@@ -1,15 +1,16 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Sparkles } from 'lucide-react';
+import { X, Plus, Sparkles, Upload, FileText, Loader2 } from 'lucide-react';
 import { FormData } from '@/pages/Index';
 import { useToast } from "@/hooks/use-toast";
+import CustomSelect from './CustomSelect';
+import { FREE_MODELS } from '@/services/geminiService';
+import { extractPdfText } from '@/lib/pdfParser';
 
 interface QuestionFormProps {
   onSubmit: (data: FormData) => void;
@@ -26,10 +27,14 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ onSubmit, isLoading }) => {
     chapters: [],
     specificTopics: '',
     additionalInstructions: '',
-    questionPaperPattern: ''
+    questionPaperPattern: '',
+    model: FREE_MODELS[1],
+    syllabusPdfText: '',
+    syllabusFileName: '',
   });
-  
+
   const [newChapter, setNewChapter] = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
   const { toast } = useToast();
 
   const subjects = ['Maths', 'Science', 'SST', 'English', 'Hindi', 'Urdu', 'Chemistry', 'Biology', 'Physics'];
@@ -41,33 +46,45 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ onSubmit, isLoading }) => {
 
   const addChapter = () => {
     if (newChapter.trim() && !formData.chapters.includes(newChapter.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        chapters: [...prev.chapters, newChapter.trim()]
-      }));
+      setFormData(prev => ({ ...prev, chapters: [...prev.chapters, newChapter.trim()] }));
       setNewChapter('');
     }
   };
 
   const removeChapter = (chapter: string) => {
-    setFormData(prev => ({
-      ...prev,
-      chapters: prev.chapters.filter(c => c !== chapter)
-    }));
+    setFormData(prev => ({ ...prev, chapters: prev.chapters.filter(c => c !== chapter) }));
+  };
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      toast({ title: "Invalid file", description: "Please upload a PDF file.", variant: "destructive" });
+      return;
+    }
+    setPdfLoading(true);
+    try {
+      const text = await extractPdfText(file);
+      setFormData(prev => ({ ...prev, syllabusPdfText: text, syllabusFileName: file.name }));
+      toast({ title: "PDF uploaded", description: `Extracted text from ${file.name}` });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Failed to read PDF", description: "Could not extract text from this PDF.", variant: "destructive" });
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const removePdf = () => {
+    setFormData(prev => ({ ...prev, syllabusPdfText: '', syllabusFileName: '' }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!formData.subject || !formData.class || !formData.totalMarks || !formData.difficulty) {
-      toast({
-        title: "Missing Required Fields",
-        description: "Please fill in all required fields marked with *",
-        variant: "destructive"
-      });
+      toast({ title: "Missing Required Fields", description: "Please fill in all required fields marked with *", variant: "destructive" });
       return;
     }
-
     onSubmit(formData);
   };
 
@@ -77,112 +94,55 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ onSubmit, isLoading }) => {
         <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
           Generate Question Paper
         </CardTitle>
-        <p className="text-center text-muted-foreground">
-          Fill in the details to create a customized question paper
-        </p>
+        <p className="text-center text-muted-foreground">Fill in the details to create a customized question paper</p>
       </CardHeader>
-      
+
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="subject">Subject *</Label>
-              <Select value={formData.subject} onValueChange={(value) => setFormData(prev => ({ ...prev, subject: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map(subject => (
-                    <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Subject *</Label>
+              <CustomSelect value={formData.subject} onChange={(v) => setFormData(p => ({ ...p, subject: v }))} options={subjects} placeholder="Select subject" />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="class">Class *</Label>
-              <Select value={formData.class} onValueChange={(value) => setFormData(prev => ({ ...prev, class: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select class" />
-                </SelectTrigger>
-                <SelectContent>
-                  {classes.map(cls => (
-                    <SelectItem key={cls} value={cls}>{cls}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Class *</Label>
+              <CustomSelect value={formData.class} onChange={(v) => setFormData(p => ({ ...p, class: v }))} options={classes} placeholder="Select class" />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="totalMarks">Total Marks *</Label>
-              <Select value={formData.totalMarks} onValueChange={(value) => setFormData(prev => ({ ...prev, totalMarks: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select total marks" />
-                </SelectTrigger>
-                <SelectContent>
-                  {totalMarks.map(marks => (
-                    <SelectItem key={marks} value={marks}>{marks} Marks</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Total Marks *</Label>
+              <CustomSelect value={formData.totalMarks} onChange={(v) => setFormData(p => ({ ...p, totalMarks: v }))} options={totalMarks} placeholder="Select total marks" formatLabel={(v) => `${v} Marks`} />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="difficulty">Difficulty Level *</Label>
-              <Select value={formData.difficulty} onValueChange={(value) => setFormData(prev => ({ ...prev, difficulty: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select difficulty" />
-                </SelectTrigger>
-                <SelectContent>
-                  {difficulties.map(difficulty => (
-                    <SelectItem key={difficulty} value={difficulty}>{difficulty}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Difficulty Level *</Label>
+              <CustomSelect value={formData.difficulty} onChange={(v) => setFormData(p => ({ ...p, difficulty: v }))} options={difficulties} placeholder="Select difficulty" />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="book">Book</Label>
-              <Select value={formData.book} onValueChange={(value) => setFormData(prev => ({ ...prev, book: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select book" />
-                </SelectTrigger>
-                <SelectContent>
-                  {books.map(book => (
-                    <SelectItem key={book} value={book}>{book}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Book</Label>
+              <CustomSelect value={formData.book} onChange={(v) => setFormData(p => ({ ...p, book: v }))} options={books} placeholder="Select book" />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="pattern">Question Paper Pattern</Label>
-              <Select value={formData.questionPaperPattern} onValueChange={(value) => setFormData(prev => ({ ...prev, questionPaperPattern: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select pattern" />
-                </SelectTrigger>
-                <SelectContent>
-                  {patterns.map(pattern => (
-                    <SelectItem key={pattern} value={pattern}>{pattern}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Question Paper Pattern</Label>
+              <CustomSelect value={formData.questionPaperPattern} onChange={(v) => setFormData(p => ({ ...p, questionPaperPattern: v }))} options={patterns} placeholder="Select pattern" />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label>AI Model</Label>
+              <CustomSelect value={formData.model} onChange={(v) => setFormData(p => ({ ...p, model: v }))} options={FREE_MODELS} placeholder="Select AI model" />
+              <p className="text-xs text-muted-foreground">Free OpenRouter models. You can also add a custom model ID.</p>
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="chapters">Chapters</Label>
+              <Label>Chapters</Label>
               <div className="flex space-x-2">
-                <Input
-                  value={newChapter}
-                  onChange={(e) => setNewChapter(e.target.value)}
-                  placeholder="Add chapter name"
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addChapter())}
-                />
-                <Button type="button" onClick={addChapter} size="icon" variant="outline">
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <Input value={newChapter} onChange={(e) => setNewChapter(e.target.value)} placeholder="Add chapter name" onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addChapter())} />
+                <Button type="button" onClick={addChapter} size="icon" variant="outline"><Plus className="h-4 w-4" /></Button>
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
                 {formData.chapters.map(chapter => (
@@ -193,40 +153,42 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ onSubmit, isLoading }) => {
                 ))}
               </div>
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="specificTopics">Specific Topics to Focus</Label>
-              <Input
-                value={formData.specificTopics}
-                onChange={(e) => setFormData(prev => ({ ...prev, specificTopics: e.target.value }))}
-                placeholder="Enter specific topics (optional)"
-              />
+              <Label>Specific Topics to Focus</Label>
+              <Input value={formData.specificTopics} onChange={(e) => setFormData(prev => ({ ...prev, specificTopics: e.target.value }))} placeholder="Enter specific topics (optional)" />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="additionalInstructions">Additional Instructions</Label>
-              <Textarea
-                value={formData.additionalInstructions}
-                onChange={(e) => setFormData(prev => ({ ...prev, additionalInstructions: e.target.value }))}
-                placeholder="Any additional instructions for the question paper..."
-                rows={3}
-              />
+              <Label>Syllabus PDF (Optional)</Label>
+              {formData.syllabusFileName ? (
+                <div className="flex items-center justify-between p-3 rounded-md border bg-muted/40">
+                  <div className="flex items-center gap-2 text-sm">
+                    <FileText className="h-4 w-4" />
+                    <span className="truncate">{formData.syllabusFileName}</span>
+                    <Badge variant="secondary">{Math.round((formData.syllabusPdfText?.length || 0) / 1000)}k chars</Badge>
+                  </div>
+                  <Button type="button" size="icon" variant="ghost" onClick={removePdf}><X className="h-4 w-4" /></Button>
+                </div>
+              ) : (
+                <label className="flex items-center justify-center gap-2 p-4 rounded-md border-2 border-dashed cursor-pointer hover:bg-muted/40 transition-colors">
+                  {pdfLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+                  <span className="text-sm text-muted-foreground">
+                    {pdfLoading ? "Reading PDF..." : "Upload syllabus PDF to base questions on it"}
+                  </span>
+                  <input type="file" accept="application/pdf" className="hidden" onChange={handlePdfUpload} disabled={pdfLoading} />
+                </label>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Additional Instructions</Label>
+              <Textarea value={formData.additionalInstructions} onChange={(e) => setFormData(prev => ({ ...prev, additionalInstructions: e.target.value }))} placeholder="Any additional instructions for the question paper..." rows={3} />
             </div>
           </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              "Generating..."
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Generate Question Paper
-              </>
-            )}
+
+          <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white" disabled={isLoading}>
+            {isLoading ? "Generating..." : (<><Sparkles className="h-4 w-4 mr-2" />Generate Question Paper</>)}
           </Button>
         </form>
       </CardContent>
