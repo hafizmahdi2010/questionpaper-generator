@@ -45,11 +45,11 @@ const QuestionPaper: React.FC<QuestionPaperProps> = ({
         title: "Success!",
         description: "Question paper generated successfully!"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating questions:', error);
       toast({
         title: "Error",
-        description: "Failed to generate question paper. Please try again.",
+        description: error?.message || "Failed to generate question paper. Please try again.",
         variant: "destructive"
       });
     } finally {
