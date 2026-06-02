@@ -89,12 +89,6 @@ const AnswerSubmission: React.FC<AnswerSubmissionProps> = ({
     }
   };
 
-  // Extract questions from markdown text (simple parsing)
-  const extractQuestions = (text: string) => {
-    const questionPattern = /(?:Question\s*\d+|Q\.\s*\d+|\d+\.)/gi;
-    const sections = text.split(questionPattern).filter(section => section.trim());
-    return sections.slice(1); // Skip the first empty section
-  };
 
   const questionSections = extractQuestions(questions);
 
