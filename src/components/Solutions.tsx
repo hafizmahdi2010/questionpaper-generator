@@ -37,8 +37,11 @@ const Solutions: React.FC<SolutionsProps> = ({ solutions, onBack }) => {
         </CardHeader>
         
         <CardContent>
-          <div className="prose prose-sm sm:prose lg:prose-lg max-w-none dark:prose-invert">
-            <div className="whitespace-pre-wrap">{solutions}</div>
+          <div data-color-mode="light">
+            <MarkdownPreview
+              source={solutions}
+              style={{ background: 'transparent', color: 'inherit' }}
+            />
           </div>
         </CardContent>
       </Card>
