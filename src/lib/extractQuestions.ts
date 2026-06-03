@@ -5,42 +5,121 @@
 export function extractQuestions(text: string): string[] {
   if (!text) return [];
 
-  // 1) Strip "General Instructions" / "Instructions" blocks entirely.
-  //    They commonly contain numbered lists like "1. All questions are compulsory."
-  //    which would otherwise be mis-detected as questions.
-  let cleaned = text.replace(
-    /(^|\n)\s*#{0,6}\s*(general\s+)?instructions?\s*:?[\s\S]*?(?=\n\s*#{1,6}\s|\n\s*(section|part)\s+[a-z0-9]|\n\s*(question\s*\d+|q\s*\.?\s*\d+)|$)/gi,
-    '\n'
-  );
+  const isolatedQuestions = isolateQuestionsSection(text);
+  const cleaned = isolatedQuestions
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .filter((line) => !shouldSkipLine(line))
+    .join('\n');
 
+  const explicitQuestions = collectExplicitQuestions(cleaned);
+  if (explicitQuestions.length > 0) return explicitQuestions;
+
+  const numberedQuestions = collectNumberedQuestions(cleaned);
+  if (numberedQuestions.length > 0) return numberedQuestions;
+
+  return splitByQuestionStarts(cleaned);
+}
+
+function isolateQuestionsSection(text: string): string {
+  const normalized = text.replace(/\r\n/g, '\n');
+  const questionsHeading = normalized.match(/(?:^|\n)\s*#{1,6}\s*questions\s*[\s\S]*$/i);
+  if (!questionsHeading) return normalized;
+  return questionsHeading[0].replace(/^(\n)?\s*#{1,6}\s*questions\s*/i, '');
+}
+
+function collectExplicitQuestions(text: string): string[] {
+  const results: string[] = [];
+  const explicitRe = /(?:^|\n)\s*(?:[-*]\s*)?(?:\*{0,2})\s*(?:Question|Q\.?)\s*[#:]?\s*(\d+)\s*[:.)-]?\s*([\s\S]*?)(?=(?:\n\s*(?:[-*]\s*)?(?:\*{0,2})\s*(?:Question|Q\.?)\s*[#:]?\s*\d+\s*[:.)-]?)|(?:\n\s*(?:section|part)\s+[a-z0-9])|(?:\n\s*#{1,6}\s)|$)/gi;
+
+  let match: RegExpExecArray | null;
+  while ((match = explicitRe.exec(text)) !== null) {
+    const question = sanitizeQuestionBlock(match[2]);
+    if (question) results.push(question);
+  }
+
+  return results;
+}
+
+function collectNumberedQuestions(text: string): string[] {
+  const results: string[] = [];
+  const numberedRe = /(?:^|\n)\s*(\d+)\s*[.):-]\s+([\s\S]*?)(?=(?:\n\s*\d+\s*[.):-]\s)|(?:\n\s*(?:section|part)\s+[a-z0-9])|(?:\n\s*#{1,6}\s)|$)/gi;
+
+  let match: RegExpExecArray | null;
+  while ((match = numberedRe.exec(text)) !== null) {
+    const question = sanitizeQuestionBlock(match[2]);
+    if (question && !looksLikeInstruction(question)) results.push(question);
+  }
+
+  return results;
+}
+
+function splitByQuestionStarts(text: string): string[] {
+  const lines = text.split('\n');
   const questions: string[] = [];
+  let buffer: string[] = [];
 
-  // 2) Prefer explicit "Question N" / "Q.N" / "QN:" markers.
-  const explicitRe = /(?:^|\n)\s*(?:\*{0,2})\s*(?:Question|Q\.?)\s*[#:]?\s*(\d+)[\.\):\-\s]+([\s\S]*?)(?=(?:\n\s*(?:\*{0,2})\s*(?:Question|Q\.?)\s*[#:]?\s*\d+[\.\):\-\s])|$)/gi;
-  let m: RegExpExecArray | null;
-  while ((m = explicitRe.exec(cleaned)) !== null) {
-    const body = m[2].trim();
-    if (body) questions.push(body);
-  }
-  if (questions.length > 0) return questions.map(cleanQ);
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (shouldSkipLine(line)) continue;
 
-  // 3) Fallback: numbered list "1." "2." etc., but skip items that look like
-  //    instructions or section headers.
-  const numberedRe = /(?:^|\n)\s*(\d+)[\.\)]\s+([\s\S]*?)(?=(?:\n\s*\d+[\.\)]\s)|\n\s*(?:section|part)\s+[a-z0-9]|$)/gi;
-  while ((m = numberedRe.exec(cleaned)) !== null) {
-    const body = m[2].trim();
-    if (!body) continue;
-    if (looksLikeInstruction(body)) continue;
-    questions.push(body);
+    if (isQuestionStart(line)) {
+      if (buffer.length > 0) {
+        const question = sanitizeQuestionBlock(buffer.join('\n'));
+        if (question) questions.push(question);
+      }
+      buffer = [stripQuestionPrefix(line)];
+      continue;
+    }
+
+    if (buffer.length > 0) {
+      buffer.push(line);
+    }
   }
-  return questions.map(cleanQ);
+
+  if (buffer.length > 0) {
+    const question = sanitizeQuestionBlock(buffer.join('\n'));
+    if (question) questions.push(question);
+  }
+
+  return questions;
 }
 
-function looksLikeInstruction(s: string): boolean {
-  const lower = s.toLowerCase().slice(0, 200);
-  return /(all questions are|question paper consists|attempt all|marks each|internal choice|time allowed|maximum marks|read the following|use of calculator|figures to the right)/i.test(lower);
+function shouldSkipLine(line: string): boolean {
+  const normalized = line.replace(/^\s*[-*#\d.)\s]+/, '').trim();
+  if (!normalized) return true;
+
+  return (
+    /^(general\s+)?instructions?\s*:?$/i.test(normalized) ||
+    /^(section|part)\s+[a-z0-9]/i.test(normalized) ||
+    /^#+\s/.test(line) ||
+    looksLikeInstruction(normalized)
+  );
 }
 
-function cleanQ(s: string): string {
-  return s.replace(/^\*+|\*+$/g, '').trim();
+function isQuestionStart(line: string): boolean {
+  return /^((?:\*{0,2})?(?:question|q\.?)\s*\d+|\d+\s*[.):-])\s*/i.test(line);
+}
+
+function stripQuestionPrefix(line: string): string {
+  return line.replace(/^((?:\*{0,2})?(?:question|q\.?)\s*\d+|\d+\s*[.):-])\s*/i, '').trim();
+}
+
+function sanitizeQuestionBlock(block: string): string {
+  const cleaned = block
+    .split('\n')
+    .filter((line) => !shouldSkipLine(line))
+    .join('\n')
+    .trim();
+
+  return cleanQ(cleaned);
+}
+
+function looksLikeInstruction(text: string): boolean {
+  const lower = text.toLowerCase().slice(0, 240);
+  return /(all questions are|question paper consists|attempt all|marks each|internal choice|time allowed|maximum marks|read all questions carefully|draw neat diagrams|answers must be based on|follow the instructions|read the following|use of calculator|figures to the right|answer any|this section contains|write in neat and clean handwriting)/i.test(lower);
+}
+
+function cleanQ(text: string): string {
+  return text.replace(/^\*+|\*+$/g, '').trim();
 }

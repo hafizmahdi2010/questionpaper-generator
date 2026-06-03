@@ -86,6 +86,15 @@ Please create a well-structured question paper with:
 5. Proper mark distribution
 6. Questions should be age-appropriate and curriculum-aligned
 
+IMPORTANT OUTPUT RULES:
+- Put instructions in a separate markdown heading named "## Instructions"
+- Put questions in a separate markdown heading named "## Questions"
+- Start every actual question on a NEW line using exactly this format: "Question 1:", "Question 2:", etc.
+- Never number instruction lines like questions
+- Never write instruction bullets inside the Questions section
+- For formulas, chemistry equations, and subscripts/superscripts, use KaTeX/LaTeX syntax with $...$ or $$...$$
+- Keep each question self-contained under its own "Question N:" label
+
 Format the output in clean Markdown format with proper headings, numbering, and formatting.`;
 
   return await makeRequest(prompt, formData.model);

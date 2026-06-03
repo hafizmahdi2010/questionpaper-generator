@@ -101,3 +101,30 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .wmde-markdown,
+  .wmde-markdown-var {
+    background-color: transparent !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .wmde-markdown {
+    font-family: inherit;
+  }
+
+  .wmde-markdown pre,
+  .wmde-markdown code {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .wmde-markdown p,
+  .wmde-markdown li {
+    line-height: 1.7;
+  }
+
+  .wmde-markdown .katex {
+    font-size: 1.05em;
+  }
+}

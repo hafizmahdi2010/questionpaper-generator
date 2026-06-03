@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download } from 'lucide-react';
-import MarkdownPreview from '@uiw/react-markdown-preview';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 interface SolutionsProps {
   solutions: string;
@@ -37,12 +37,7 @@ const Solutions: React.FC<SolutionsProps> = ({ solutions, onBack }) => {
         </CardHeader>
         
         <CardContent>
-          <div data-color-mode="light">
-            <MarkdownPreview
-              source={solutions}
-              style={{ background: 'transparent', color: 'inherit' }}
-            />
-          </div>
+          <MarkdownRenderer source={solutions} />
         </CardContent>
       </Card>
     </div>
