@@ -9,8 +9,8 @@ import { FormData, Answer, PerformanceResult } from '@/pages/Index';
 import { evaluateAnswers } from '@/services/geminiService';
 import { CheckCircle, Clock, Send } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import MarkdownPreview from '@uiw/react-markdown-preview';
 import { extractQuestions } from '@/lib/extractQuestions';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 interface AnswerSubmissionProps {
   formData: FormData;
@@ -125,11 +125,7 @@ const AnswerSubmission: React.FC<AnswerSubmissionProps> = ({
                 <div className="space-y-4">
                   <div>
                     <div className="font-semibold mb-2">Question {index + 1}</div>
-                    <MarkdownPreview
-                      source={question}
-                      style={{ background: 'transparent', color: 'inherit' }}
-                      wrapperElement={{ 'data-color-mode': 'light' } as any}
-                    />
+                    <MarkdownRenderer source={question} />
                   </div>
 
                   <div className="space-y-2">
