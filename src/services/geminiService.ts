@@ -27,7 +27,7 @@ const makeRequest = async (prompt: string, model: string): Promise<string> => {
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'X-Title': 'Question Paper Generator',
+        'X-Title': 'QraftAI',
       },
       body: JSON.stringify({
         model: chosenModel,
